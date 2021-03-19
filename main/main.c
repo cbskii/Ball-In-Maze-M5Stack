@@ -4,8 +4,8 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "buttons.h"
-#include "unity.h"
 
+// TODO convert spaces to tabs in all files using clang-format based on linux guidelines
 void app_main(void)
 {
     // TODO for now just test different components

@@ -1,25 +1,27 @@
+/*
+ * Basic ESP32 driver for getting accelerometer and gyroscope data from the MPU9250 IMU. A lot of
+ * MPU9250 functionality is not supported by this driver, only what's necessary for basic
+ * roll/pitch usage. The MPU9250 has a FIFO buffer that can be used to store accel and gyro
+ * data, but the preferred method here is to just poll from the application to get latest data
+ * and update position as necessary.
+ *
+ * DATASHEET: https://www.invensense.com/wp-content/uploads/2015/02/PS-MPU-9250A-01-v1.1.pdf
+ * REGISTER MAP: https://cdn.sparkfun.com/assets/learn_tutorials/5/5/0/MPU-9250-Register-Map.pdf
+ */
+
 #ifndef MPU9250_H
 #define MPU9250_H
 
+#include <stdint.h>
+
+// TODO figure out what units are needed for Madgewick IMU algorithm
 // Example: https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp
-// DATASHEET: https://www.invensense.com/wp-content/uploads/2015/02/PS-MPU-9250A-01-v1.1.pdf
-// REGISTER MAP: https://cdn.sparkfun.com/assets/learn_tutorials/5/5/0/MPU-9250-Register-Map.pdf
-
-// TODO the goal of this driver is to be able to return raw
-//      accelerometer data - since we only care about roll and pitch,
-//      we don't need to use the gyroscope (needed for yaw) or
-//      the magnetometer. There are also more features available like
-//      temperature sensing which will not be accounted for.
-//      Useful reading: https://cache.freescale.com/files/sensors/doc/app_note/AN3461.pdf
-
-// TODO use FIFO to store accelerometer data and read from that?
-
-// TODO document all project stuff using doxygen syntax
+// Other example: https://github.com/bolderflight/mpu9250/blob/main/README.md
+// Useful: https://longnight975551865.wordpress.com/2018/02/11/how-to-read-data-from-mpu9250/
+// IMU algorithms: https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
 
 #define MPU9250_I2C_ADDR (0x68)
-
-/* Register reset */
-#define RESET (0x00)
+#define MPU9250_EXPECTED_WHOAMI (0x71)
 
 /* Gyro and Accelerometer registers */
 #define SELF_TEST_X_GYRO (0x00)
@@ -116,12 +118,31 @@
 #define FIFO_COUNTL (0x73)
 #define FIFO_R_W (0x74)
 #define WHO_AM_I (0x75)
-#define XA_OFFSET_H R/W (0x77)
-#define XA_OFFSET_L R/W (0x78)
-#define YA_OFFSET_H R/W (0x7A)
-#define YA_OFFSET_L R/W (0x7B)
-#define ZA_OFFSET_H R/W (0x7D)
-#define ZA_OFFSET_L R/W (0x7E)
+#define XA_OFFSET_H (0x77)
+#define XA_OFFSET_L (0x78)
+#define YA_OFFSET_H (0x7A)
+#define YA_OFFSET_L (0x7B)
+#define ZA_OFFSET_H (0x7D)
+#define ZA_OFFSET_L (0x7E)
+
+/*
+ * Acceleration in x, y and z axes in units of g (e.g. when placed on a flat table x and y
+ * will be 0g and z will be +1g).
+ */
+struct accel {
+	float x;
+	float y;
+	float z;
+};
+
+/*
+ * Gryoscope data indicates rotation around a specific axis represented in degrees/second.
+ */
+struct gyro {
+	float x;
+	float y;
+	float z;
+};
 
 // esp_err_t get_raw_accel_data(struct accel_data* raw_accel_data) {
 //     // TODO accel data is 16 bits, H << 8 | L
@@ -130,5 +151,11 @@
 //     uint8_t raw_data;
 //     esp_err_t err;
 //     err = i2c_master_read()
+
+// TODO docstrings
+esp_err_t mpu9250_init();
+esp_err_t mpu9250_deinit();
+void mpu9250_get_accel_data(struct accel *const accel_data);
+void mpu9250_get_gyro_data(struct gyro *const gyro_data);
 
 #endif /* MPU9250_H */

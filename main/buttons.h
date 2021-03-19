@@ -1,3 +1,10 @@
+/* 
+ * Basic button driver. Currently only supports presses and works fairly well,
+ * but ultimately needs debounce support.
+ *
+ * TODO rewrite using timer interrupt and debouncing algorithm for multiple
+ *      buttons mentioned in http://www.ganssle.com/debouncing-pt2.htm
+ */
 
 #ifndef BUTTONS_H
 #define BUTTONS_H

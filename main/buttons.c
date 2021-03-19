@@ -1,10 +1,3 @@
-/* 
- * Basic button driver. Currently only supports presses and works fairly well,
- * but ultimately needs debounce support.
- *
- * TODO rewrite using timer interrupt and debouncing algorithm for multiple
- *      buttons mentioned in http://www.ganssle.com/debouncing-pt2.htm
- */
 
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -39,6 +32,7 @@ static void button_isr_handler(void *arg) {
                        NULL);
 }
 
+// TODO this may need to be in application not driver
 static void button_task(void *pvParameters) {
     uint32_t button_info, pressed_button;
     bool is_button_released;
