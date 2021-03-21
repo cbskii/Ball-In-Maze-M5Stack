@@ -13,12 +13,7 @@
 #define MPU9250_H
 
 #include <stdint.h>
-
-// TODO figure out what units are needed for Madgewick IMU algorithm
-// Example: https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp
-// Other example: https://github.com/bolderflight/mpu9250/blob/main/README.md
-// Useful: https://longnight975551865.wordpress.com/2018/02/11/how-to-read-data-from-mpu9250/
-// IMU algorithms: https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
+#include "esp_err.h"
 
 #define MPU9250_I2C_ADDR (0x68)
 #define MPU9250_EXPECTED_WHOAMI (0x71)
@@ -144,18 +139,25 @@ struct gyro {
 	float z;
 };
 
-// esp_err_t get_raw_accel_data(struct accel_data* raw_accel_data) {
-//     // TODO accel data is 16 bits, H << 8 | L
-//     // TODO can use a data length of 6 bytes to read all
-//     //      x, y and z at once - cast into int16_t
-//     uint8_t raw_data;
-//     esp_err_t err;
-//     err = i2c_master_read()
-
-// TODO docstrings
+/**
+ * @brief Initializes the mpu9250 for accelerometer and gyroscope usage along
+ * with I2C necessary to communicate with the chip.
+ */
 esp_err_t mpu9250_init();
+
+/**
+ * @brief Teardown of mpu9250.
+ */
 esp_err_t mpu9250_deinit();
+
+/**
+ * @brief Returns most recent accelerometer data in units of g.
+ */
 void mpu9250_get_accel_data(struct accel *const accel_data);
+
+/**
+ * @brief Returns most recent gyroscope data in units of degrees per second.
+ */
 void mpu9250_get_gyro_data(struct gyro *const gyro_data);
 
 #endif /* MPU9250_H */

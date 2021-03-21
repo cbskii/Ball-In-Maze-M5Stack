@@ -30,34 +30,34 @@ static void calculate_accel_resolution(uint8_t accel_fs)
 {
     switch(accel_fs) {
     case ACCEL_FS_2G:
-        g_accel_res = UINT16_MAX / (2 * 2);
+        g_accel_res_num_per_g = UINT16_MAX / (2 * 2);
         break;
     case ACCEL_FS_4G:
-        g_accel_res = UINT16_MAX / (2 * 4);
+        g_accel_res_num_per_g = UINT16_MAX / (2 * 4);
         break;
     case ACCEL_FS_8G:
-        g_accel_res = UINT16_MAX / (2 * 8);
+        g_accel_res_num_per_g = UINT16_MAX / (2 * 8);
         break;
     case ACCEL_FS_16G:
-        g_accel_res = UINT16_MAX / (2 * 16);
+        g_accel_res_num_per_g = UINT16_MAX / (2 * 16);
         break;
     }
 }
 
 static void calculate_gyro_resolution(uint8_t gyro_fs)
 {
-    switch(accel_fs) {
+    switch(gyro_fs) {
     case GYRO_FS_250DPS:
-        g_gyro_res = UINT16_MAX / (2 * 250);
+        g_gyro_res_num_per_dps = UINT16_MAX / (2 * 250);
         break;
     case GYRO_FS_500DPS:
-        g_gyro_res = UINT16_MAX / (2 * 500);
+        g_gyro_res_num_per_dps = UINT16_MAX / (2 * 500);
         break;
     case GYRO_FS_1000DPS:
-        g_gyro_res = UINT16_MAX / (2 * 1000);
+        g_gyro_res_num_per_dps = UINT16_MAX / (2 * 1000);
         break;
     case GYRO_FS_2000DPS:
-        g_gyro_res = UINT16_MAX / (2 * 2000);
+        g_gyro_res_num_per_dps = UINT16_MAX / (2 * 2000);
         break;
     }
 }
@@ -173,8 +173,38 @@ esp_err_t mpu9250_init()
         return ESP_FAIL;
     }
 
-    // TODO rest of init
-    // TODO try out different accel and gryo sensitivity configurations, start with 4g and 500dps
+    /* Set clock source based on a Gyro axis if available, else default to internal oscillator */
+    mpu9250_write_byte(PWR_MGMT_1, 0x01);
+    vTaskDelay(200 / portTICK_RATE_MS);
+
+    /* Configure gyroscope range/sensitivity and enable low pass filter */
+    uint8_t gyro_fs = GYRO_FS_500DPS;
+    uint8_t gyro_dlpf_cfg = 0x04; /* 20Hz, 9.9ms delay */
+    mpu9250_write_byte(GYRO_CONFIG, gyro_fs << 3);
+    mpu9250_write_byte(CONFIG, gyro_dlpf_cfg);
+    calculate_gyro_resolution(gyro_fs);
+
+    /* Configure accelerometer range/sensitivity and enable low pass filter */
+    uint8_t accel_fs = ACCEL_FS_4G;
+    uint8_t accel_dlpf_cfg = 0x03; /* 41Hz, 11.80ms delay */
+    mpu9250_write_byte(ACCEL_CONFIG, accel_fs << 3);
+    mpu9250_write_byte(ACCEL_CONFIG_2, accel_dlpf_cfg);
+    calculate_accel_resolution(accel_fs);
+}
+
+void mpu9250_calibrate()
+{
+    // TODO see the following for reference:
+    // https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp
+    // https://github.com/kriswiner/MPU9250/issues/306
+    return;
+}
+
+bool mpu9250_self_test()
+{
+    // TODO see the following for reference:
+    // https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp
+    return true;
 }
 
 esp_err_t mpu9250_deinit()
