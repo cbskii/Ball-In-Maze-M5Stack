@@ -5,7 +5,6 @@
 #include "driver/gpio.h"
 #include "buttons.h"
 
-// TODO convert spaces to tabs in all files using clang-format based on linux guidelines
 void app_main(void)
 {
     // TODO for now just test different components

@@ -1,3 +1,4 @@
+#include "driver/i2c.h"
 #include "mpu9250.h"
 
 /* Acccelerometer full scale settings */
@@ -234,8 +235,8 @@ void mpu9250_get_gyro_data(struct gyro *const gyro_data)
     /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
     err = mpu9250_read_bytes(GYRO_XOUT_H, raw_data, sizeof(raw_data));
     if ((err == ESP_OK) && gyro_data) {
-        accel_data->x = ((raw_data[0] << 8) | raw_data[1]) / g_gyro_res_num_per_dps;
-        accel_data->y = ((raw_data[2] << 8) | raw_data[3]) / g_gyro_res_num_per_dps;
-        accel_data->z = ((raw_data[4] << 8) | raw_data[5]) / g_gyro_res_num_per_dps;
+        gyro_data->x = ((raw_data[0] << 8) | raw_data[1]) / g_gyro_res_num_per_dps;
+        gyro_data->y = ((raw_data[2] << 8) | raw_data[3]) / g_gyro_res_num_per_dps;
+        gyro_data->z = ((raw_data[4] << 8) | raw_data[5]) / g_gyro_res_num_per_dps;
     }
 }
