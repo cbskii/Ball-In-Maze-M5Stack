@@ -10,4 +10,5 @@ idf_component_register(
         "."
         "./ESP32_TFT_library/components/tft/"
         "./ESP32_TFT_library/components/spidriver/"
+        "./Fusion/Fusion/"
 )

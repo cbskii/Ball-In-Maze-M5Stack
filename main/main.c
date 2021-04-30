@@ -16,7 +16,7 @@ void app_main(void)
     buttons_init();
 
     /* Loop forever */
-    for (;;) {
+    while (true) {
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 
