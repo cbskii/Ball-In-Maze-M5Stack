@@ -311,6 +311,7 @@ esp_err_t mpu9250_init()
     mpu9250_write_byte(ACCEL_CONFIG, accel_fs << 3);
     mpu9250_write_byte(ACCEL_CONFIG_2, accel_dlpf_cfg);
     calculate_accel_resolution(accel_fs);
+    return ESP_OK;
 }
 
 void mpu9250_calibrate()
@@ -330,7 +331,7 @@ bool mpu9250_self_test()
 
 esp_err_t mpu9250_deinit()
 {
-    mpu9250_deinit_i2c();
+    return mpu9250_deinit_i2c();
 }
 
 void mpu9250_get_accel_data(struct accel *const accel_data)

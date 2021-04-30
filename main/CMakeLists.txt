@@ -1,3 +1,13 @@
 idf_component_register(
-    SRCS "main.c" "buttons.c"
-    INCLUDE_DIRS ".")
+    SRCS 
+        "main.c"
+        "buttons.c"
+        "mpu9250.c"
+        "./ESP32_TFT_library/components/tft/tft.c"
+        "./ESP32_TFT_library/components/tft/tftspi.c"
+        "./ESP32_TFT_library/components/spidriver/spi_master_lobo.c"
+    INCLUDE_DIRS
+        "."
+        "./ESP32_TFT_library/components/tft/"
+        "./ESP32_TFT_library/components/spidriver/"
+)
