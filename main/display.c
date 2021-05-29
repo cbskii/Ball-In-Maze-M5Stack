@@ -2,7 +2,11 @@
 #include "display.h"
 
 /* Define which spi bus to use TFT_VSPI_HOST or TFT_HSPI_HOST */
-#define SPI_BUS TFT_HSPI_HOST
+#define SPI_BUS			TFT_HSPI_HOST
+
+#define BACKGROUND_COLOR	TFT_BLACK
+#define BALL_COLOR		TFT_WHITE
+#define MAZE_WALL_COLOR		TFT_WHITE
 
 // TODO clean all of this up
 // TODO need proper error return values
@@ -87,6 +91,45 @@ void display_test()
     TFT_drawFastHLine(0, (_height / 2) - 30, _width - 1, TFT_WHITE);
     TFT_fillCircle(20, _height / 2, 7, TFT_WHITE);
     vTaskDelay(2000 / portTICK_RATE_MS);
+}
+
+static void display_draw_ball(display_coord_t pos, color_t color)
+{
+    TFT_fillCircle(pos.x, pos.y, 7, color);
+}
+
+void display_draw_maze(display_coord_t *initial_ball_pos)
+{
+    if (!initial_ball_pos) {
+        printf("%s: initial_ball_pos is NULL.", __func__);
+    }
+
+    TFT_fillScreen(BACKGROUND_COLOR);
+    TFT_resetclipwin();
+    /* _fg = TFT_YELLOW; */
+    /* _bg = (color_t){ 64, 64, 64 }; */
+    /* TFT_setFont(DEFAULT_FONT, NULL); */
+    /* TFT_fillRect(0, 0, _width-1, TFT_getfontheight()+8, _bg); */
+    /* TFT_drawRect(0, 0, _width-1, TFT_getfontheight()+8, TFT_CYAN); */
+    /* char text[5]; */
+    /* strlcpy(text, "TEST", sizeof(text)); */
+    /* TFT_print(text, CENTER, 4); */
+    /* TFT_setclipwin(0,TFT_getfontheight()+9, _width-1, _height-TFT_getfontheight()-10); */
+    TFT_drawFastHLine(0, (_height / 2) + 30, _width - 1, MAZE_WALL_COLOR);
+    TFT_drawFastHLine(0, (_height / 2) - 30, _width - 1, MAZE_WALL_COLOR);
+    vTaskDelay(2000 / portTICK_RATE_MS);
+
+    /* Hardcoded start values for now */
+    initial_ball_pos->x = 20;
+    initial_ball_pos->y = _height / 2;
+    display_draw_ball(*initial_ball_pos, BALL_COLOR);
+}
+
+void display_move_ball(display_coord_t old_pos, display_coord_t new_pos)
+{
+    // TODO assumes ball was not touching maze wall and can't redraw the wall
+    display_draw_ball(old_pos, BACKGROUND_COLOR);
+    display_draw_ball(new_pos, BALL_COLOR);
 }
 
 void display_shutdown()

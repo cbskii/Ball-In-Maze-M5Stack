@@ -32,12 +32,12 @@ static void button_isr_handler(void *arg) {
                        NULL);
 }
 
-// TODO this may need to be in application not driver
 static void button_task(void *pvParameters) {
     uint32_t button_info, pressed_button;
     bool is_button_released;
     char button_string[9];
-    for(;;) {
+
+    while (true) {
         /* Wait for a button press notification and clear
          * the notification afterwards. Blocks indefinitely until
          * a notification is received. */
@@ -45,7 +45,6 @@ static void button_task(void *pvParameters) {
         is_button_released = !!(button_info >> STATE_BIT);
         pressed_button = (button_info & 0xff);
 
-        /* Ugly way to print button strings */
         if (pressed_button == BUTTON_A) {
             strcpy(button_string, get_button_string(BUTTON_A));
         } else if (pressed_button == BUTTON_B) {
@@ -55,6 +54,8 @@ static void button_task(void *pvParameters) {
         } else {
             strcpy(button_string, "UNKNOWN!");
         }
+
+        // TODO for now just print button action, eventually use for something
         printf("%s - %s\n",
                button_string,
                is_button_released ? "RELEASED\n" : "PRESSED");
@@ -63,6 +64,9 @@ static void button_task(void *pvParameters) {
 
 void buttons_init(void) {
     esp_err_t err;
+
+    /* Install ISR service */
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); /* low priority interrupt */
 
     /* Configure button GPIOs */
     for (int i = 0; i < NUM_BUTTONS; i++) {
@@ -100,4 +104,7 @@ void buttons_exit(void) {
                    "Error: %d\n", buttons_list[i], err);
         }
     }
+
+    /* Uninstall ISR service */
+    gpio_uninstall_isr_service();
 }
