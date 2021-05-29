@@ -3,3 +3,4 @@ compile_commands.json
 **/build
 .cache
 main/Fusion
+sdkconfig.old
