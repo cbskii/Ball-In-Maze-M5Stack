@@ -4,6 +4,7 @@ idf_component_register(
         "buttons.c"
         "mpu9250.c"
         "display.c"
+        "motion.c"
         "./ESP32_TFT_library/components/tft/tft.c"
         "./ESP32_TFT_library/components/tft/tftspi.c"
         "./ESP32_TFT_library/components/tft/SmallFont.c"
