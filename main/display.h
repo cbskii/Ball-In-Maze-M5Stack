@@ -1,8 +1,7 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include "tftspi.h"
-#include "tft.h"
+#include "common.h"
 
 typedef struct {
 	int16_t x;
@@ -11,8 +10,9 @@ typedef struct {
 
 void display_init();
 void display_shutdown();
-void display_draw_maze(display_coord_t *initial_ball_pos);
-void display_move_ball(display_coord_t old_pos, display_coord_t new_pos);
+void display_draw_maze(ball_t *ball);
+/* void display_move_ball(display_coord_t old_pos, display_coord_t new_pos); */
+void display_move_ball(ball_t *ball);
 
 // TODO debug
 void display_test();

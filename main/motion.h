@@ -5,8 +5,10 @@
 #ifndef MOTION_H
 #define MOTION_H
 
+#include "common.h"
+
 void motion_init();
 void motion_shutdown();
-void motion_get_euler_angles();
+void motion_update_ball_pos(ball_t *ball);
 
 #endif /* MOTION_H */

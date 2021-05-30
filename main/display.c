@@ -1,4 +1,6 @@
 #include <string.h>
+#include "tft.h"
+#include "tftspi.h"
 #include "display.h"
 
 /* Define which spi bus to use TFT_VSPI_HOST or TFT_HSPI_HOST */
@@ -7,6 +9,7 @@
 #define BACKGROUND_COLOR	TFT_BLACK
 #define BALL_COLOR		TFT_WHITE
 #define MAZE_WALL_COLOR		TFT_WHITE
+#define BALL_RADIUS		(7)
 
 // TODO clean all of this up
 // TODO need proper error return values
@@ -93,43 +96,41 @@ void display_test()
     vTaskDelay(2000 / portTICK_RATE_MS);
 }
 
-static void display_draw_ball(display_coord_t pos, color_t color)
+// TODO draw walls around edge of M5stack screen so only wall information can be used to make
+// judgements about ball position. Return structure describing maze layout with wall positions.
+// Or take an input struct containing layout with wall positions that also gets used for motion
+// control of ball and here just used for drawing on display. Input struct should contain initial
+// ball position so it doesn't have to be passed in separately.
+void display_draw_maze(ball_t *ball)
 {
-    TFT_fillCircle(pos.x, pos.y, 7, color);
-}
-
-void display_draw_maze(display_coord_t *initial_ball_pos)
-{
-    if (!initial_ball_pos) {
-        printf("%s: initial_ball_pos is NULL.", __func__);
+    if (!ball) {
+        printf("%s: ball is NULL.", __func__);
     }
 
     TFT_fillScreen(BACKGROUND_COLOR);
     TFT_resetclipwin();
-    /* _fg = TFT_YELLOW; */
-    /* _bg = (color_t){ 64, 64, 64 }; */
-    /* TFT_setFont(DEFAULT_FONT, NULL); */
-    /* TFT_fillRect(0, 0, _width-1, TFT_getfontheight()+8, _bg); */
-    /* TFT_drawRect(0, 0, _width-1, TFT_getfontheight()+8, TFT_CYAN); */
-    /* char text[5]; */
-    /* strlcpy(text, "TEST", sizeof(text)); */
-    /* TFT_print(text, CENTER, 4); */
-    /* TFT_setclipwin(0,TFT_getfontheight()+9, _width-1, _height-TFT_getfontheight()-10); */
     TFT_drawFastHLine(0, (_height / 2) + 30, _width - 1, MAZE_WALL_COLOR);
     TFT_drawFastHLine(0, (_height / 2) - 30, _width - 1, MAZE_WALL_COLOR);
     vTaskDelay(2000 / portTICK_RATE_MS);
 
     /* Hardcoded start values for now */
-    initial_ball_pos->x = 20;
-    initial_ball_pos->y = _height / 2;
-    display_draw_ball(*initial_ball_pos, BALL_COLOR);
+    ball->pos.x = 20;
+    ball->pos.y = _height / 2;
+    ball->prev_pos.x = 20;
+    ball->prev_pos.y = _height / 2;
+    TFT_fillCircle(ball->pos.x, ball->pos.y, BALL_RADIUS, BALL_COLOR);
 }
 
-void display_move_ball(display_coord_t old_pos, display_coord_t new_pos)
+void display_move_ball(ball_t *ball)
 {
+    if (!ball) {
+        printf("%s: ball is NULL.\n", __func__);
+        return;
+    }
+
     // TODO assumes ball was not touching maze wall and can't redraw the wall
-    display_draw_ball(old_pos, BACKGROUND_COLOR);
-    display_draw_ball(new_pos, BALL_COLOR);
+    TFT_fillCircle(ball->prev_pos.x, ball->prev_pos.y, BALL_RADIUS, BACKGROUND_COLOR);
+    TFT_fillCircle(ball->pos.x, ball->pos.y, BALL_RADIUS, BALL_COLOR);
 }
 
 void display_shutdown()
