@@ -190,13 +190,13 @@ static esp_err_t mpu9250_init_i2c()
 
     err = i2c_param_config(g_i2c_master_port, &conf);
     if (err != ESP_OK) {
-        printf("Error configuring i2c params: %d", err);
+        printf("Error configuring i2c params: %d\n", err);
         return err;
     }
 
     err = i2c_driver_install(g_i2c_master_port, conf.mode, 0, 0, 0);
     if (err != ESP_OK) {
-        printf("Error installing i2c: %d", err);
+        printf("Error installing i2c: %d\n", err);
         return err;
     }
 
@@ -215,14 +215,14 @@ static esp_err_t mpu9250_write_byte(uint8_t addr, uint8_t data)
     /* S -> AD+W -> RA -> DATA -> P */
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, addr, true);
-    i2c_master_write_byte(cmd, data, true);
+    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+    i2c_master_write_byte(cmd, addr, I2C_MASTER_ACK);
+    i2c_master_write_byte(cmd, data, I2C_MASTER_ACK);
     i2c_master_stop(cmd);
 
     err = i2c_master_cmd_begin(g_i2c_master_port, cmd, 1000 / portTICK_RATE_MS);
     if (err) {
-        printf("Error writing byte 0x%X to address 0x%X: %d", data, addr, err);
+        printf("Error writing byte 0x%X to address 0x%X: 0x%X\n", data, addr, err);
     }
 
     i2c_cmd_link_delete(cmd);
@@ -236,16 +236,16 @@ static esp_err_t mpu9250_read_byte(uint8_t addr, uint8_t *data)
     /* S -> AD+W -> RA -> S -> AD+R -> READ DATA -> NACK -> P */
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, addr, true);
+    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+    i2c_master_write_byte(cmd, addr, I2C_MASTER_ACK);
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_READ, true);
-    i2c_master_read_byte(cmd, data, false);
+    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_READ, I2C_MASTER_ACK);
+    i2c_master_read_byte(cmd, data, I2C_MASTER_NACK);
     i2c_master_stop(cmd);
 
     err = i2c_master_cmd_begin(g_i2c_master_port, cmd, 1000 / portTICK_RATE_MS);
     if (err) {
-        printf("Error reading byte from address 0x%X: %d", addr, err);
+        printf("Error reading byte from address 0x%X: %d\n", addr, err);
     }
 
     i2c_cmd_link_delete(cmd);
@@ -259,17 +259,17 @@ static esp_err_t mpu9250_read_bytes(uint8_t addr, uint8_t *data, uint8_t num_byt
     /* S -> AD+W -> RA -> S -> AD+R -> RDATA (n-1) -> ACK -> RDATA (1) -> NACK P */
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, addr, true);
+    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+    i2c_master_write_byte(cmd, addr, I2C_MASTER_ACK);
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_READ, true);
-    i2c_master_read(cmd, data, num_bytes - 1, true);
-    i2c_master_read_byte(cmd, data + (num_bytes - 1), false);
+    i2c_master_write_byte(cmd, (MPU9250_I2C_ADDR << 1) | I2C_MASTER_READ, I2C_MASTER_ACK);
+    i2c_master_read(cmd, data, num_bytes - 1, I2C_MASTER_ACK);
+    i2c_master_read_byte(cmd, data + (num_bytes - 1), I2C_MASTER_NACK);
     i2c_master_stop(cmd);
 
     err = i2c_master_cmd_begin(g_i2c_master_port, cmd, 1000 / portTICK_RATE_MS);
     if (err) {
-        printf("Error reading %d bytes starting from address 0x%X: %d", num_bytes, addr, err);
+        printf("Error reading %d bytes starting from address 0x%X: %d\n", num_bytes, addr, err);
     }
 
     i2c_cmd_link_delete(cmd);
@@ -283,7 +283,6 @@ esp_err_t mpu9250_init()
 
     /* Initialize MPU9250 power by resetting all registers and waking the device up */
     mpu9250_write_byte(PWR_MGMT_1, 0x00);
-    vTaskDelay(100 / portTICK_RATE_MS);
 
     /* Verify WHO_AM_I */
     uint8_t who_am_i;
@@ -296,7 +295,6 @@ esp_err_t mpu9250_init()
 
     /* Set clock source based on a Gyro axis if available, else default to internal oscillator */
     mpu9250_write_byte(PWR_MGMT_1, 0x01);
-    vTaskDelay(200 / portTICK_RATE_MS);
 
     /* Configure gyroscope range/sensitivity and enable low pass filter */
     uint8_t gyro_fs = GYRO_FS_500DPS;
@@ -329,12 +327,49 @@ bool mpu9250_self_test()
     return true;
 }
 
-esp_err_t mpu9250_deinit()
+esp_err_t mpu9250_shutdown()
 {
     return mpu9250_deinit_i2c();
 }
 
-void mpu9250_get_accel_data(struct accel *const accel_data)
+float mpu9250_get_accel_sensitivity()
+{
+    return 1.0 / g_accel_res_num_per_g;
+}
+
+float mpu9250_get_gyro_sensitivity()
+{
+    return 1.0 / g_gyro_res_num_per_dps;
+}
+
+void mpu9250_get_raw_accel_data(accel_t *const accel_data)
+{
+    esp_err_t err;
+    uint8_t raw_data[6];
+
+    /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
+    err = mpu9250_read_bytes(ACCEL_XOUT_H, raw_data, sizeof(raw_data));
+    if ((err == ESP_OK) && accel_data) {
+        accel_data->x = ((raw_data[0] << 8) | raw_data[1]);
+        accel_data->y = ((raw_data[2] << 8) | raw_data[3]);
+        accel_data->z = ((raw_data[4] << 8) | raw_data[5]);
+    }
+}
+
+void mpu9250_get_raw_gyro_data(gyro_t *const gyro_data)
+{
+    esp_err_t err;
+    uint8_t raw_data[6];
+
+    /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
+    err = mpu9250_read_bytes(GYRO_XOUT_H, raw_data, sizeof(raw_data));
+    if ((err == ESP_OK) && gyro_data) {
+        gyro_data->x = ((raw_data[0] << 8) | raw_data[1]);
+        gyro_data->y = ((raw_data[2] << 8) | raw_data[3]);
+        gyro_data->z = ((raw_data[4] << 8) | raw_data[5]);
+    }
+}
+void mpu9250_get_accel_data(accel_t *const accel_data)
 {
     esp_err_t err;
     uint8_t raw_data[6];
@@ -348,7 +383,7 @@ void mpu9250_get_accel_data(struct accel *const accel_data)
     }
 }
 
-void mpu9250_get_gyro_data(struct gyro *const gyro_data)
+void mpu9250_get_gyro_data(gyro_t *const gyro_data)
 {
     esp_err_t err;
     uint8_t raw_data[6];

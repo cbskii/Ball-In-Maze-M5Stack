@@ -19,20 +19,20 @@
  * Acceleration in x, y and z axes in units of g (e.g. when placed on a flat table x and y
  * will be 0g and z will be +1g).
  */
-struct accel {
+typedef struct {
 	float x;
 	float y;
 	float z;
-};
+} accel_t;
 
 /*
  * Gryoscope data indicates rotation around a specific axis represented in degrees/second.
  */
-struct gyro {
+typedef struct {
 	float x;
 	float y;
 	float z;
-};
+} gyro_t;
 
 /**
  * @brief Initializes the mpu9250 for accelerometer and gyroscope usage along
@@ -43,16 +43,48 @@ esp_err_t mpu9250_init();
 /**
  * @brief Teardown of mpu9250.
  */
-esp_err_t mpu9250_deinit();
+esp_err_t mpu9250_shutdown();
 
 /**
- * @brief Returns most recent accelerometer data in units of g.
+ * @brief Returns accelerometer sensitivity in g per lsb
+ *
+ * @return accelerometer sensitivity
  */
-void mpu9250_get_accel_data(struct accel *const accel_data);
+float mpu9250_get_accel_sensitivity();
+
+/**
+ * @brief Returns gyroscope sensitivity in degrees per second per lsb
+ *
+ * @return gyroscope sensitivity
+ */
+float mpu9250_get_gyro_sensitivity();
+
+/**
+ * @brief Returns most recent accelerometer data in units of lsb.
+ *
+ * @param[out] accel_data: raw accel data
+ */
+void mpu9250_get_raw_accel_data(accel_t *const accel_data);
 
 /**
  * @brief Returns most recent gyroscope data in units of degrees per second.
+ *
+ * @param[out] gyro_data: raw gyro data
  */
-void mpu9250_get_gyro_data(struct gyro *const gyro_data);
+void mpu9250_get_raw_gyro_data(gyro_t *const gyro_data);
+
+/**
+ * @brief Returns most recent accelerometer data in units of g.
+ *
+ * @param[out] accel_data: accel data
+ */
+void mpu9250_get_accel_data(accel_t *const accel_data);
+
+/**
+ * @brief Returns most recent gyroscope data in units of degrees per second.
+ *
+ * @param[out] gyro_data: gyro data
+ */
+void mpu9250_get_gyro_data(gyro_t *const gyro_data);
 
 #endif /* MPU9250_H */
