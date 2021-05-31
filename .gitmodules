@@ -1,6 +1,3 @@
-[submodule "main/Fusion"]
-	path = main/Fusion
-	url = https://github.com/xioTechnologies/Fusion.git
 [submodule "main/ESP32_TFT_library"]
 	path = main/ESP32_TFT_library
 	url = https://github.com/cbabroski/ESP32_TFT_library.git

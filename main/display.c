@@ -9,7 +9,6 @@
 #define BACKGROUND_COLOR	TFT_BLACK
 #define BALL_COLOR		TFT_WHITE
 #define MAZE_WALL_COLOR		TFT_WHITE
-#define BALL_RADIUS		(7)
 
 // TODO clean all of this up
 // TODO need proper error return values

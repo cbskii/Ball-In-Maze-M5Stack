@@ -283,6 +283,7 @@ esp_err_t mpu9250_init()
 
     /* Initialize MPU9250 power by resetting all registers and waking the device up */
     mpu9250_write_byte(PWR_MGMT_1, 0x00);
+    vTaskDelay(100 / portTICK_RATE_MS);
 
     /* Verify WHO_AM_I */
     uint8_t who_am_i;
@@ -309,23 +310,141 @@ esp_err_t mpu9250_init()
     mpu9250_write_byte(ACCEL_CONFIG, accel_fs << 3);
     mpu9250_write_byte(ACCEL_CONFIG_2, accel_dlpf_cfg);
     calculate_accel_resolution(accel_fs);
+
+#ifdef CALIBRATE_DURING_INIT /* Doesn't appear to be necessary */
+    /* Calibrate mpu9250 by collecting at-rest data and storing bias into offset registers */
+    mpu9250_calibrate();
+#endif
     return ESP_OK;
 }
 
+/*
+ * Based off of the code at:
+ * https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp.
+ */
+#ifdef CALIBRATE_DURING_INIT
 void mpu9250_calibrate()
 {
-    // TODO see the following for reference:
-    // https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp
-    // https://github.com/kriswiner/MPU9250/issues/306
-    return;
-}
+    uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
+    uint16_t ii, packet_count, fifo_count;
+    int32_t gyro_bias[3] = { 0, 0, 0 };
+    int32_t accel_bias[3] = { 0, 0, 0 };
 
-bool mpu9250_self_test()
-{
-    // TODO see the following for reference:
-    // https://github.com/m5stack/M5Stack/blob/master/src/utility/MPU9250.cpp
-    return true;
+    // Configure MPU6050 gyro and accelerometer for bias calculation
+    // NOTE: not sure if these should be set, previous config in init() does not set low pass
+    // filter
+    /* mpu9250_write_byte(CONFIG, 0x01);  // Set low-pass filter to 188 Hz */
+    /* mpu9250_write_byte(SMPLRT_DIV, 0x00);  // Set sample rate to 1 kHz */
+
+    // Configure FIFO to capture accelerometer and gyro data for bias calculation
+    mpu9250_write_byte(USER_CTRL, 0x40);   // Enable FIFO
+    mpu9250_write_byte(FIFO_EN, 0x78);   // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
+    vTaskDelay(40 / portTICK_RATE_MS); // accumulate 40 samples in 40 milliseconds = 480 bytes
+
+    // At end of sample accumulation, turn off FIFO sensor read
+    mpu9250_write_byte(FIFO_EN, 0x00);  // Disable gyro and accelerometer sensors for FIFO
+    mpu9250_read_bytes(FIFO_COUNTH, &data[0], 2); // read FIFO sample count
+    fifo_count = ((uint16_t)data[0] << 8) | data[1];
+    packet_count = fifo_count / 12; // How many sets of full gyro and accelerometer data for averaging
+
+    for (ii = 0; ii < packet_count; ii++) {
+        int16_t accel_temp[3] = { 0, 0, 0 }, gyro_temp[3] = { 0, 0, 0 };
+        mpu9250_read_bytes(FIFO_R_W, &data[0], 12); // read data for averaging
+
+        accel_temp[0] = (int16_t) (((int16_t)data[0] << 8) | data[1]  );  // Form signed 16-bit integer for each sample in FIFO
+        accel_temp[1] = (int16_t) (((int16_t)data[2] << 8) | data[3]  );
+        accel_temp[2] = (int16_t) (((int16_t)data[4] << 8) | data[5]  );
+        gyro_temp[0]  = (int16_t) (((int16_t)data[6] << 8) | data[7]  );
+        gyro_temp[1]  = (int16_t) (((int16_t)data[8] << 8) | data[9]  );
+        gyro_temp[2]  = (int16_t) (((int16_t)data[10] << 8) | data[11]);
+
+        accel_bias[0] += (int32_t) accel_temp[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
+        accel_bias[1] += (int32_t) accel_temp[1];
+        accel_bias[2] += (int32_t) accel_temp[2];
+        gyro_bias[0]  += (int32_t) gyro_temp[0];
+        gyro_bias[1]  += (int32_t) gyro_temp[1];
+        gyro_bias[2]  += (int32_t) gyro_temp[2];
+    }
+
+    accel_bias[0] /= (int32_t) packet_count; // Normalize sums to get average count biases
+    accel_bias[1] /= (int32_t) packet_count;
+    accel_bias[2] /= (int32_t) packet_count;
+    gyro_bias[0]  /= (int32_t) packet_count;
+    gyro_bias[1]  /= (int32_t) packet_count;
+    gyro_bias[2]  /= (int32_t) packet_count;
+
+    if (accel_bias[2] > 0L) {
+        // Remove gravity from the z-axis accelerometer bias calculation
+        accel_bias[2] -= (int32_t)g_accel_res_num_per_g;
+    } else {
+        accel_bias[2] += (int32_t)g_accel_res_num_per_g;
+    }
+
+    // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
+    data[0] = (-gyro_bias[0]/4  >> 8)   & 0xFF; // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
+    data[1] = (-gyro_bias[0] / 4)       & 0xFF; // Biases are additive, so change sign on calculated average gyro biases
+    data[2] = (-gyro_bias[1] / 4  >> 8) & 0xFF;
+    data[3] = (-gyro_bias[1] / 4)       & 0xFF;
+    data[4] = (-gyro_bias[2] / 4  >> 8) & 0xFF;
+    data[5] = (-gyro_bias[2] / 4)       & 0xFF;
+
+    // Push gyro biases to hardware registers
+    mpu9250_write_byte(XG_OFFSET_H, data[0]);
+    mpu9250_write_byte(XG_OFFSET_L, data[1]);
+    mpu9250_write_byte(YG_OFFSET_H, data[2]);
+    mpu9250_write_byte(YG_OFFSET_L, data[3]);
+    mpu9250_write_byte(ZG_OFFSET_H, data[4]);
+    mpu9250_write_byte(ZG_OFFSET_L, data[5]);
+
+    // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
+    // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
+    // non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
+    // compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
+    // the accelerometer biases calculated above must be divided by 8.
+
+    int32_t accel_bias_reg[3] = { 0, 0, 0 }; // A place to hold the factory accelerometer trim biases
+    mpu9250_read_bytes(XA_OFFSET_H, &data[0], 2); // Read factory accelerometer trim values
+    accel_bias_reg[0] = (int32_t) (((int16_t)data[0] << 8) | data[1]);
+    mpu9250_read_bytes(YA_OFFSET_H, &data[0], 2);
+    accel_bias_reg[1] = (int32_t) (((int16_t)data[0] << 8) | data[1]);
+    mpu9250_read_bytes(ZA_OFFSET_H, &data[0], 2);
+    accel_bias_reg[2] = (int32_t) (((int16_t)data[0] << 8) | data[1]);
+
+    uint32_t mask = 1uL; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
+    uint8_t mask_bit[3] = { 0, 0, 0 }; // Define array to hold mask bit for each accelerometer bias axis
+
+    for(ii = 0; ii < 3; ii++) {
+        if((accel_bias_reg[ii] & mask)) {
+            mask_bit[ii] = 0x01; // If temperature compensation bit is set, record that fact in mask_bit
+        }
+    }
+
+    // Construct total accelerometer bias, including calculated average accelerometer bias from above
+    accel_bias_reg[0] -= (accel_bias[0] / 8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+    accel_bias_reg[1] -= (accel_bias[1] / 8);
+    accel_bias_reg[2] -= (accel_bias[2] / 8);
+
+    data[0] = (accel_bias_reg[0] >> 8) & 0xFF;
+    data[1] = (accel_bias_reg[0])      & 0xFF;
+    data[1] = data[1] | mask_bit[0]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+    data[2] = (accel_bias_reg[1] >> 8) & 0xFF;
+    data[3] = (accel_bias_reg[1])      & 0xFF;
+    data[3] = data[3] | mask_bit[1]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+    data[4] = (accel_bias_reg[2] >> 8) & 0xFF;
+    data[5] = (accel_bias_reg[2])      & 0xFF;
+    data[5] = data[5] | mask_bit[2]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+
+    // Apparently this is not working for the acceleration biases in the MPU-9250
+    // Are we handling the temperature correction bit properly?
+    // Push accelerometer biases to hardware registers
+    mpu9250_write_byte(XA_OFFSET_H, data[0]);
+    mpu9250_write_byte(XA_OFFSET_L, data[1]);
+    mpu9250_write_byte(YA_OFFSET_H, data[2]);
+    mpu9250_write_byte(YA_OFFSET_L, data[3]);
+    mpu9250_write_byte(ZA_OFFSET_H, data[4]);
+    mpu9250_write_byte(ZA_OFFSET_L, data[5]);
 }
+#endif /* CALIBRATE_DURING_INIT */
 
 esp_err_t mpu9250_shutdown()
 {
@@ -342,7 +461,7 @@ float mpu9250_get_gyro_sensitivity()
     return 1.0 / g_gyro_res_num_per_dps;
 }
 
-void mpu9250_get_raw_accel_data(accel_t *const accel_data)
+void mpu9250_get_raw_accel_data(vector_int_t *const accel_data)
 {
     esp_err_t err;
     uint8_t raw_data[6];
@@ -350,13 +469,13 @@ void mpu9250_get_raw_accel_data(accel_t *const accel_data)
     /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
     err = mpu9250_read_bytes(ACCEL_XOUT_H, raw_data, sizeof(raw_data));
     if ((err == ESP_OK) && accel_data) {
-        accel_data->x = ((raw_data[0] << 8) | raw_data[1]);
-        accel_data->y = ((raw_data[2] << 8) | raw_data[3]);
-        accel_data->z = ((raw_data[4] << 8) | raw_data[5]);
+        accel_data->x = ((int16_t)raw_data[0] << 8 | raw_data[1]);
+        accel_data->y = ((int16_t)raw_data[2] << 8 | raw_data[3]);
+        accel_data->z = ((int16_t)raw_data[4] << 8 | raw_data[5]);
     }
 }
 
-void mpu9250_get_raw_gyro_data(gyro_t *const gyro_data)
+void mpu9250_get_raw_gyro_data(vector_int_t *const gyro_data)
 {
     esp_err_t err;
     uint8_t raw_data[6];
@@ -364,35 +483,28 @@ void mpu9250_get_raw_gyro_data(gyro_t *const gyro_data)
     /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
     err = mpu9250_read_bytes(GYRO_XOUT_H, raw_data, sizeof(raw_data));
     if ((err == ESP_OK) && gyro_data) {
-        gyro_data->x = ((raw_data[0] << 8) | raw_data[1]);
-        gyro_data->y = ((raw_data[2] << 8) | raw_data[3]);
-        gyro_data->z = ((raw_data[4] << 8) | raw_data[5]);
+        gyro_data->x = ((int16_t)raw_data[0] << 8 | raw_data[1]);
+        gyro_data->y = ((int16_t)raw_data[2] << 8 | raw_data[3]);
+        gyro_data->z = ((int16_t)raw_data[4] << 8 | raw_data[5]);
     }
 }
-void mpu9250_get_accel_data(accel_t *const accel_data)
+void mpu9250_get_accel_data(vector_float_t *const accel_data)
 {
-    esp_err_t err;
-    uint8_t raw_data[6];
+    vector_int_t raw_data;
 
-    /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
-    err = mpu9250_read_bytes(ACCEL_XOUT_H, raw_data, sizeof(raw_data));
-    if ((err == ESP_OK) && accel_data) {
-        accel_data->x = ((raw_data[0] << 8) | raw_data[1]) / g_accel_res_num_per_g;
-        accel_data->y = ((raw_data[2] << 8) | raw_data[3]) / g_accel_res_num_per_g;
-        accel_data->z = ((raw_data[4] << 8) | raw_data[5]) / g_accel_res_num_per_g;
-    }
+    mpu9250_get_raw_accel_data(&raw_data);
+    accel_data->x = (float)raw_data.x / g_accel_res_num_per_g;
+    accel_data->y = (float)raw_data.y / g_accel_res_num_per_g;
+    accel_data->z = (float)raw_data.z / g_accel_res_num_per_g;
+
 }
 
-void mpu9250_get_gyro_data(gyro_t *const gyro_data)
+void mpu9250_get_gyro_data(vector_float_t *const gyro_data)
 {
-    esp_err_t err;
-    uint8_t raw_data[6];
+    vector_int_t raw_data;
 
-    /* XYZ high and low bytes are stored at consecutive addresses so read all at once */
-    err = mpu9250_read_bytes(GYRO_XOUT_H, raw_data, sizeof(raw_data));
-    if ((err == ESP_OK) && gyro_data) {
-        gyro_data->x = ((raw_data[0] << 8) | raw_data[1]) / g_gyro_res_num_per_dps;
-        gyro_data->y = ((raw_data[2] << 8) | raw_data[3]) / g_gyro_res_num_per_dps;
-        gyro_data->z = ((raw_data[4] << 8) | raw_data[5]) / g_gyro_res_num_per_dps;
-    }
+    mpu9250_get_raw_gyro_data(&raw_data);
+    gyro_data->x = (float)raw_data.x / g_gyro_res_num_per_dps;
+    gyro_data->y = (float)raw_data.y / g_gyro_res_num_per_dps;
+    gyro_data->z = (float)raw_data.z / g_gyro_res_num_per_dps;
 }

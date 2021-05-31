@@ -11,8 +11,6 @@ void app_main(void)
     // TODO get working power on/off button
     // TODO do stuff with buttons
     // TODO generate different mazes
-    /* display_coord_t prev_ball_pos; */
-    /* display_coord_t new_ball_pos; */
     ball_t ball;
 
     buttons_init();
@@ -23,7 +21,12 @@ void app_main(void)
     while (true) {
         motion_update_ball_pos(&ball);
         display_move_ball(&ball);
-        vTaskDelay(50 / portTICK_RATE_MS); // TODO adjust as necessary
+
+        /*
+         * Note changing this delay will require changing the ball's movement speed as well to
+         * match responsiveness
+         */
+        vTaskDelay(20 / portTICK_RATE_MS); 
     }
 
     display_shutdown();

@@ -17,12 +17,8 @@ idf_component_register(
         "./ESP32_TFT_library/components/tft/DejaVuSans18.c"
         "./ESP32_TFT_library/components/tft/DejaVuSans24.c"
         "./ESP32_TFT_library/components/spidriver/spi_master_lobo.c"
-        "./Fusion/Fusion/FusionAhrs.c"
-        "./Fusion/Fusion/FusionBias.c"
-        "./Fusion/Fusion/FusionCompass.c"
     INCLUDE_DIRS
         "."
         "./ESP32_TFT_library/components/tft/"
         "./ESP32_TFT_library/components/spidriver/"
-        "./Fusion/Fusion/"
 )
