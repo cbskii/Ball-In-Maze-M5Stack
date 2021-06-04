@@ -43,7 +43,7 @@ void app_main(void)
     while (true) {
         /* Note: changing this delay requires changing ball speed as well */
         vTaskDelay(20 / portTICK_RATE_MS); 
-        motion_update_ball_pos(&ball);
+        motion_update_ball_pos(&ball, &maze);
         display_move_ball(&ball);
     }
 
