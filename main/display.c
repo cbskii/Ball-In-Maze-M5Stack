@@ -10,8 +10,6 @@
 #define BALL_COLOR		TFT_WHITE
 #define MAZE_WALL_COLOR		TFT_WHITE
 
-// TODO clean all of this up
-// TODO need proper error return values
 void display_init()
 {
     esp_err_t ret;
@@ -76,6 +74,7 @@ void display_init()
     TFT_resetclipwin();
 }
 
+#ifdef DISPLAY_TEST
 void display_test()
 {
     TFT_fillScreen(TFT_BLACK);
@@ -94,40 +93,42 @@ void display_test()
     TFT_fillCircle(20, _height / 2, 7, TFT_WHITE);
     vTaskDelay(2000 / portTICK_RATE_MS);
 }
+#endif /* DISPLAY_TEST */
 
-// TODO draw walls around edge of M5stack screen so only wall information can be used to make
-// judgements about ball position. Return structure describing maze layout with wall positions.
-// Or take an input struct containing layout with wall positions that also gets used for motion
-// control of ball and here just used for drawing on display. Input struct should contain initial
-// ball position so it doesn't have to be passed in separately.
-void display_draw_maze(ball_t *ball)
+int display_get_height(void)
 {
-    if (!ball) {
-        printf("%s: ball is NULL.", __func__);
+    return _height;
+}
+
+int display_get_width(void)
+{
+    return _width;
+}
+
+void display_draw_maze(const ball_t *ball, const maze_t *maze)
+{
+    if (!ball || !maze) {
+        printf("%s: ball or maze is NULL.", __func__);
     }
 
     TFT_fillScreen(BACKGROUND_COLOR);
     TFT_resetclipwin();
-    TFT_drawFastHLine(0, (_height / 2) + 30, _width - 1, MAZE_WALL_COLOR);
-    TFT_drawFastHLine(0, (_height / 2) - 30, _width - 1, MAZE_WALL_COLOR);
-    vTaskDelay(2000 / portTICK_RATE_MS);
-
-    /* Hardcoded start values for now */
-    ball->pos.x = 20;
-    ball->pos.y = _height / 2;
-    ball->prev_pos.x = 20;
-    ball->prev_pos.y = _height / 2;
     TFT_fillCircle(ball->pos.x, ball->pos.y, BALL_RADIUS, BALL_COLOR);
+    for (int i = 0; i < maze->num_walls; i++) {
+        TFT_drawLine(maze->walls[i].start.x, maze->walls[i].start.y,
+                     maze->walls[i].end.x, maze->walls[i].end.y, MAZE_WALL_COLOR);
+    }
+    vTaskDelay(2000 / portTICK_RATE_MS);
 }
 
-void display_move_ball(ball_t *ball)
+void display_move_ball(const ball_t *ball)
 {
     if (!ball) {
         printf("%s: ball is NULL.\n", __func__);
         return;
     }
 
-    // TODO assumes ball was not touching maze wall and can't redraw the wall
+    /* Assumes ball is not touching a maze wall */
     TFT_fillCircle(ball->prev_pos.x, ball->prev_pos.y, BALL_RADIUS, BACKGROUND_COLOR);
     TFT_fillCircle(ball->pos.x, ball->pos.y, BALL_RADIUS, BALL_COLOR);
 }

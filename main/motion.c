@@ -74,7 +74,7 @@ void motion_update_ball_pos(ball_t *ball)
     ball->velocity.y += accel.y * 0.3;
 #endif
 
-    /* Clamp max velocity ball can reach */
+    /* Clamp the max velocity the ball can reach */
     #define MAX_VELOCITY (5)
     if (ball->velocity.x > MAX_VELOCITY) {
         ball->velocity.x = MAX_VELOCITY;
@@ -107,6 +107,7 @@ void motion_update_ball_pos(ball_t *ball)
         ball->velocity.y = -ball->velocity.y / FRICTION;
     }
 
+    /* Just update position directly based on "velocity" value; works fine */
     ball->pos.x += ball->velocity.x;
     ball->pos.y += ball->velocity.y;
 

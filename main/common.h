@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define BALL_RADIUS (7)
+#define MAX_NUM_WALLS (15)
 
 typedef struct {
     float x;
@@ -20,7 +21,6 @@ typedef struct {
 typedef struct {
     uint16_t x;
     uint16_t y;
-    uint16_t z;
 } pos_t;
 
 typedef struct {
@@ -28,5 +28,15 @@ typedef struct {
     pos_t pos;
     vector_float_t velocity;
 } ball_t;
+
+typedef struct {
+	pos_t start;
+	pos_t end;
+} wall_t;
+
+typedef struct {
+	wall_t walls[MAX_NUM_WALLS];
+	uint8_t num_walls;
+} maze_t;
 
 #endif /* COMMON_H */
