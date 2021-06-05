@@ -27,22 +27,6 @@ void motion_shutdown()
     mpu9250_shutdown();
 }
 
-static bool point_is_in_wall(pos_t point, wall_t wall)
-{
-    if (wall.start.x == wall.end.x) {
-        /* vertical wall */
-        if ((wall.start.x - WALL_BUFFER <= point.x) && (point.x <= wall.start.x + WALL_BUFFER)) {
-            return true;
-        }
-    } else {
-        /* horizontal wall */
-        if ((wall.start.y - WALL_BUFFER <= point.y) && (point.y <= wall.start.y + WALL_BUFFER)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool point_is_below_wall(pos_t point, wall_t wall)
 {
     /* Y direction is reversed, smaller numbers near top of display */
@@ -79,6 +63,14 @@ static bool point_is_right_of_wall(pos_t point, wall_t wall)
     } else {
         return point.x > (wall.start.x + WALL_BUFFER);
     }
+}
+
+static bool point_is_in_wall(pos_t point, wall_t wall)
+{
+    return (!point_is_above_wall(point, wall) &&
+            !point_is_below_wall(point, wall) &&
+            !point_is_left_of_wall(point, wall) &&
+            !point_is_right_of_wall(point, wall));
 }
 
 static bool is_ball_moving_vertically(ball_t ball)
@@ -163,11 +155,9 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     }
 
     if (ball->pos.y > display_get_height() - WALL_BUFFER) {
-        printf("hit bottom of display\n");
         ball->pos.y = display_get_height() - WALL_BUFFER;
         hit_horiz_wall = true;
     } else if (ball->pos.y < WALL_BUFFER) {
-        printf("hit top of display\n");
         ball->pos.y = WALL_BUFFER;
         hit_horiz_wall = true;
     }
@@ -182,25 +172,41 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
          * If the new ball position is inside a maze wall, then use the ball's previous position
          * to figure out where the new position really should be.
          */
-        // TODO doesn't solve case where there is a gap between walls...
         if (point_is_in_wall(ball->pos, maze->walls[i])) {
             if (point_is_below_wall(ball->prev_pos, maze->walls[i])) {
                 printf("prev pos was below wall\n");
-                ball->pos.y = maze->walls[i].start.y + WALL_BUFFER;
                 hit_horiz_wall = true;
+                if (maze->walls[i].start.y <= maze->walls[i].end.y) {
+                    ball->pos.y = maze->walls[i].end.y + WALL_BUFFER;
+                } else {
+                    ball->pos.y = maze->walls[i].start.y + WALL_BUFFER;
+                }
             } else if (point_is_above_wall(ball->prev_pos, maze->walls[i])) {
                 printf("prev pos was above wall\n");
-                ball->pos.y = maze->walls[i].start.y - WALL_BUFFER;
                 hit_horiz_wall = true;
+                if (maze->walls[i].start.y <= maze->walls[i].end.y) {
+                    ball->pos.y = maze->walls[i].start.y - WALL_BUFFER;
+                } else {
+                    ball->pos.y = maze->walls[i].end.y - WALL_BUFFER;
+                }
             } else if (point_is_left_of_wall(ball->prev_pos, maze->walls[i])) {
                 printf("prev pos was left of wall\n");
-                ball->pos.x = maze->walls[i].start.x - WALL_BUFFER;
                 hit_vert_wall = true;
+                if (maze->walls[i].start.x <= maze->walls[i].end.x) {
+                    ball->pos.x = maze->walls[i].start.x - WALL_BUFFER;
+                } else {
+                    ball->pos.x = maze->walls[i].end.x - WALL_BUFFER;
+                }
             } else if (point_is_right_of_wall(ball->prev_pos, maze->walls[i])) {
                 printf("prev pos was right of wall\n");
-                ball->pos.x = maze->walls[i].start.x + WALL_BUFFER;
                 hit_vert_wall = true;
+                if (maze->walls[i].start.x <= maze->walls[i].end.x) {
+                    ball->pos.x = maze->walls[i].end.x + WALL_BUFFER;
+                } else {
+                    ball->pos.x = maze->walls[i].start.x + WALL_BUFFER;
+                }
             } else {
+                // TODO still a bug where part of the wall can get erased near gap
                 printf("Error: previous point was in wall.\n");
                 return;
             }
