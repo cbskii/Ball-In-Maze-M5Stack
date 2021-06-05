@@ -18,12 +18,12 @@ void init_ball_and_maze(ball_t *ball, maze_t *maze)
     // TODO build maze based off of a config file and verify num_walls is < MAX_NUM_WALLS
     maze->walls[0].start.x = 0;
     maze->walls[0].start.y = (display_get_height() / 2) + 30;
-    maze->walls[0].end.x = display_get_width() - 1;
+    maze->walls[0].end.x = (display_get_width() / 2) - 70;
     maze->walls[0].end.y = (display_get_height() / 2) + 30;
-    maze->walls[1].start.x = 0;
-    maze->walls[1].start.y = (display_get_height() / 2) - 30;
-    maze->walls[1].end.x = display_get_width() - 1;
-    maze->walls[1].end.y = (display_get_height() / 2) - 30;
+    maze->walls[1].start.x = display_get_width() / 2;
+    maze->walls[1].start.y = display_get_height() - 1;
+    maze->walls[1].end.x = display_get_width() / 2;
+    maze->walls[1].end.y = 1;
     maze->num_walls = 2;
 }
 
@@ -41,8 +41,9 @@ void app_main(void)
     display_draw_maze(&ball, &maze);
 
     while (true) {
-        /* Note: changing this delay requires changing ball speed as well */
-        vTaskDelay(20 / portTICK_RATE_MS); 
+        /* Note: changing this delay may require changing ball speed as well */
+        /* vTaskDelay(20 / portTICK_RATE_MS); */ 
+        vTaskDelay(100 / portTICK_RATE_MS); 
         motion_update_ball_pos(&ball, &maze);
         display_move_ball(&ball);
     }
