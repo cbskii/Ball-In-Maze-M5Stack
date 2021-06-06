@@ -70,7 +70,6 @@ static bool point_is_in_wall(pos_t point, wall_t wall)
             !point_is_right_of_wall(point, wall));
 }
 
-// TODO when laying flat on table ball still moves
 static bool is_ball_moving_vertically(ball_t ball)
 {
     if (ball.velocity.y < -MIN_VELOCITY || ball.velocity.y > MIN_VELOCITY) {
@@ -111,7 +110,7 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     ball->velocity.y += accel.y * BALL_SPEED_FACTOR;
 
     if (!is_ball_moving_horizontally(*ball) && !is_ball_moving_vertically(*ball)) {
-        printf("Ball is not moving; skip updating position.\n");
+        /* Skip updating position if ball is not moving */
         return;
     }
 
