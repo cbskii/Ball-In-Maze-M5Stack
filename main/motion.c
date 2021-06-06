@@ -70,6 +70,7 @@ static bool point_is_in_wall(pos_t point, wall_t wall)
             !point_is_right_of_wall(point, wall));
 }
 
+// TODO when laying flat on table ball still moves
 static bool is_ball_moving_vertically(ball_t ball)
 {
     if (ball.velocity.y < -MIN_VELOCITY || ball.velocity.y > MIN_VELOCITY) {
@@ -109,6 +110,11 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     ball->velocity.x += -accel.x * BALL_SPEED_FACTOR;
     ball->velocity.y += accel.y * BALL_SPEED_FACTOR;
 
+    if (!is_ball_moving_horizontally(*ball) && !is_ball_moving_vertically(*ball)) {
+        printf("Ball is not moving; skip updating position.\n");
+        return;
+    }
+
     /*
      * Just update position directly based on "velocity" value; works fine. Also handle
      * unwanted integer wrapping due to negative velocities (unlikely).
@@ -143,18 +149,18 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
 
     /* Check for ball hitting display edges */
     if (ball->pos.x > display_get_width() - BALL_RADIUS) {
-        ball->pos.x = display_get_width() - BALL_RADIUS;
+        ball->pos.x = display_get_width() - BALL_RADIUS - 1;
         hit_vert_wall = true;
     } else if (ball->pos.x < BALL_RADIUS) {
-        ball->pos.x = BALL_RADIUS;
+        ball->pos.x = BALL_RADIUS + 1;
         hit_vert_wall = true;
     }
 
     if (ball->pos.y > display_get_height() - BALL_RADIUS) {
-        ball->pos.y = display_get_height() - BALL_RADIUS;
+        ball->pos.y = display_get_height() - BALL_RADIUS - 1;
         hit_horiz_wall = true;
     } else if (ball->pos.y < BALL_RADIUS) {
-        ball->pos.y = BALL_RADIUS;
+        ball->pos.y = BALL_RADIUS + 1;
         hit_horiz_wall = true;
     }
 
@@ -205,18 +211,14 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     }
 
     if (hit_horiz_wall) {
-        if (is_ball_moving_vertically(*ball)) {
-            ball->velocity.y = -ball->velocity.y / FRICTION;
-        }
+        ball->velocity.y = -ball->velocity.y / FRICTION;
     }
 
     if (hit_vert_wall) {
-        if (is_ball_moving_horizontally(*ball)) {
-            ball->velocity.x = -ball->velocity.x / FRICTION;
-        }
+        ball->velocity.x = -ball->velocity.x / FRICTION;
     }
 
-    /* printf("ball position: x=%d, y=%d\n", ball->pos.x, ball->pos.y); */
-    /* printf("ball velocity: x=%0.1f, y=%0.1f\n", ball->velocity.x, ball->velocity.y); */
+    printf("ball position: x=%d, y=%d\n", ball->pos.x, ball->pos.y);
+    printf("ball velocity: x=%0.1f, y=%0.1f\n", ball->velocity.x, ball->velocity.y);
     return;
 }
