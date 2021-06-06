@@ -4,9 +4,6 @@
 #include "mpu9250.h"
 #include "display.h"
 
-/* How close the ball can get to a wall or edge of display */
-#define WALL_BUFFER (BALL_RADIUS + 5)
-
 /*
  * These values help determine how fast the ball will move in response to accelerations and what
  * happens when the ball rebounds off of a wall. They should be tuned based on main loop delay
@@ -31,9 +28,9 @@ static bool point_is_below_wall(pos_t point, wall_t wall)
 {
     /* Y direction is reversed, smaller numbers near top of display */
     if (wall.start.y <= wall.end.y) {
-        return point.y > (wall.end.y + WALL_BUFFER);
+        return point.y > (wall.end.y + BALL_RADIUS);
     } else {
-        return point.y > (wall.start.y + WALL_BUFFER);
+        return point.y > (wall.start.y + BALL_RADIUS);
     }
 }
 
@@ -41,27 +38,27 @@ static bool point_is_above_wall(pos_t point, wall_t wall)
 {
     /* Y direction is reversed, smaller numbers near top of display */
     if (wall.start.y <= wall.end.y) {
-        return point.y < (wall.start.y - WALL_BUFFER);
+        return point.y < (wall.start.y - BALL_RADIUS);
     } else {
-        return point.y < (wall.end.y - WALL_BUFFER);
+        return point.y < (wall.end.y - BALL_RADIUS);
     }
 }
 
 static bool point_is_left_of_wall(pos_t point, wall_t wall)
 {
     if (wall.start.x <= wall.end.x) {
-        return point.x < (wall.start.x - WALL_BUFFER);
+        return point.x < (wall.start.x - BALL_RADIUS);
     } else {
-        return point.x < (wall.end.x - WALL_BUFFER);
+        return point.x < (wall.end.x - BALL_RADIUS);
     }
 }
 
 static bool point_is_right_of_wall(pos_t point, wall_t wall)
 {
     if (wall.start.x <= wall.end.x) {
-        return point.x > (wall.end.x + WALL_BUFFER);
+        return point.x > (wall.end.x + BALL_RADIUS);
     } else {
-        return point.x > (wall.start.x + WALL_BUFFER);
+        return point.x > (wall.start.x + BALL_RADIUS);
     }
 }
 
@@ -91,7 +88,6 @@ static bool is_ball_moving_horizontally(ball_t ball)
     return false;
 }
 
-/* Note: assumes only vertical and horizontal walls for now */
 void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
 {
     bool hit_vert_wall = false;
@@ -146,19 +142,19 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     }
 
     /* Check for ball hitting display edges */
-    if (ball->pos.x > display_get_width() - WALL_BUFFER) {
-        ball->pos.x = display_get_width() - WALL_BUFFER;
+    if (ball->pos.x > display_get_width() - BALL_RADIUS) {
+        ball->pos.x = display_get_width() - BALL_RADIUS;
         hit_vert_wall = true;
-    } else if (ball->pos.x < WALL_BUFFER) {
-        ball->pos.x = WALL_BUFFER;
+    } else if (ball->pos.x < BALL_RADIUS) {
+        ball->pos.x = BALL_RADIUS;
         hit_vert_wall = true;
     }
 
-    if (ball->pos.y > display_get_height() - WALL_BUFFER) {
-        ball->pos.y = display_get_height() - WALL_BUFFER;
+    if (ball->pos.y > display_get_height() - BALL_RADIUS) {
+        ball->pos.y = display_get_height() - BALL_RADIUS;
         hit_horiz_wall = true;
-    } else if (ball->pos.y < WALL_BUFFER) {
-        ball->pos.y = WALL_BUFFER;
+    } else if (ball->pos.y < BALL_RADIUS) {
+        ball->pos.y = BALL_RADIUS;
         hit_horiz_wall = true;
     }
 
@@ -170,43 +166,38 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     for (int i = 0; i < maze->num_walls; i++) {
         /*
          * If the new ball position is inside a maze wall, then use the ball's previous position
-         * to figure out where the new position really should be.
+         * to figure out where the ball needs to be and move it just outside the wall.
          */
         if (point_is_in_wall(ball->pos, maze->walls[i])) {
             if (point_is_below_wall(ball->prev_pos, maze->walls[i])) {
-                printf("prev pos was below wall\n");
                 hit_horiz_wall = true;
                 if (maze->walls[i].start.y <= maze->walls[i].end.y) {
-                    ball->pos.y = maze->walls[i].end.y + WALL_BUFFER;
+                    ball->pos.y = maze->walls[i].end.y + BALL_RADIUS + 1;
                 } else {
-                    ball->pos.y = maze->walls[i].start.y + WALL_BUFFER;
+                    ball->pos.y = maze->walls[i].start.y + BALL_RADIUS + 1;
                 }
             } else if (point_is_above_wall(ball->prev_pos, maze->walls[i])) {
-                printf("prev pos was above wall\n");
                 hit_horiz_wall = true;
                 if (maze->walls[i].start.y <= maze->walls[i].end.y) {
-                    ball->pos.y = maze->walls[i].start.y - WALL_BUFFER;
+                    ball->pos.y = maze->walls[i].start.y - BALL_RADIUS - 1;
                 } else {
-                    ball->pos.y = maze->walls[i].end.y - WALL_BUFFER;
+                    ball->pos.y = maze->walls[i].end.y - BALL_RADIUS - 1;
                 }
             } else if (point_is_left_of_wall(ball->prev_pos, maze->walls[i])) {
-                printf("prev pos was left of wall\n");
                 hit_vert_wall = true;
                 if (maze->walls[i].start.x <= maze->walls[i].end.x) {
-                    ball->pos.x = maze->walls[i].start.x - WALL_BUFFER;
+                    ball->pos.x = maze->walls[i].start.x - BALL_RADIUS - 1;
                 } else {
-                    ball->pos.x = maze->walls[i].end.x - WALL_BUFFER;
+                    ball->pos.x = maze->walls[i].end.x - BALL_RADIUS - 1;
                 }
             } else if (point_is_right_of_wall(ball->prev_pos, maze->walls[i])) {
-                printf("prev pos was right of wall\n");
                 hit_vert_wall = true;
                 if (maze->walls[i].start.x <= maze->walls[i].end.x) {
-                    ball->pos.x = maze->walls[i].end.x + WALL_BUFFER;
+                    ball->pos.x = maze->walls[i].end.x + BALL_RADIUS + 1;
                 } else {
-                    ball->pos.x = maze->walls[i].start.x + WALL_BUFFER;
+                    ball->pos.x = maze->walls[i].start.x + BALL_RADIUS + 1;
                 }
             } else {
-                // TODO still a bug where part of the wall can get erased near gap
                 printf("Error: previous point was in wall.\n");
                 return;
             }
@@ -214,20 +205,18 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
     }
 
     if (hit_horiz_wall) {
-        printf("Hit horizontal wall!\n");
         if (is_ball_moving_vertically(*ball)) {
             ball->velocity.y = -ball->velocity.y / FRICTION;
         }
     }
 
     if (hit_vert_wall) {
-        printf("Hit vertical wall!\n");
         if (is_ball_moving_horizontally(*ball)) {
             ball->velocity.x = -ball->velocity.x / FRICTION;
         }
     }
 
-    printf("ball position: x=%d, y=%d\n", ball->pos.x, ball->pos.y);
-    printf("ball velocity: x=%0.1f, y=%0.1f\n", ball->velocity.x, ball->velocity.y);
+    /* printf("ball position: x=%d, y=%d\n", ball->pos.x, ball->pos.y); */
+    /* printf("ball velocity: x=%0.1f, y=%0.1f\n", ball->velocity.x, ball->velocity.y); */
     return;
 }
