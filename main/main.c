@@ -34,7 +34,7 @@ void app_main(void)
     }
 
     if (GEN_MAX_NUM_WALLS != MAX_NUM_WALLS) {
-        printf("Maze was generated with a different max number of walls defined. Supported: %d"\n,
+        printf("Maze was generated with a different max number of walls defined. Supported: %d\n",
                 MAX_NUM_WALLS);
         return;
     }
