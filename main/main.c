@@ -24,11 +24,18 @@ void app_main(void)
     motion_init();
     display_init();
 
-    /* Verify generated maze is based off correct values */
+    /* Verify generated maze is based off correct values. In the future we could generate a
+     * common header that includes this information and is shared by the maze generation script. */
     if ((GEN_DISPLAY_WIDTH != display_get_width()) || (GEN_DISPLAY_HEIGHT != display_get_height())) {
         printf("Maze was generated with incorrect display width/height settings!. "
                "Supported dimensions: width=%d, height=%d\n",
                display_get_width(), display_get_height());
+        return;
+    }
+
+    if (GEN_MAX_NUM_WALLS != MAX_NUM_WALLS) {
+        printf("Maze was generated with a different max number of walls defined. Supported: %d"\n,
+                MAX_NUM_WALLS);
         return;
     }
 

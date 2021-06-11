@@ -217,7 +217,7 @@ void motion_update_ball_pos(ball_t *ball, const maze_t *maze)
         ball->velocity.x = -ball->velocity.x / FRICTION;
     }
 
-    printf("ball position: x=%d, y=%d\n", ball->pos.x, ball->pos.y);
-    printf("ball velocity: x=%0.1f, y=%0.1f\n", ball->velocity.x, ball->velocity.y);
+    /* printf("ball position: x=%d, y=%d\n", ball->pos.x, ball->pos.y); */
+    /* printf("ball velocity: x=%0.1f, y=%0.1f\n", ball->velocity.x, ball->velocity.y); */
     return;
 }

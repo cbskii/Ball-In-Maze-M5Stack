@@ -1,37 +1,38 @@
+#!/usr/bin/env python3
+
 """
-This script generates a maze for the M5Stack along with a starting position for the ball.
+This script generates a maze for the M5Stack along with a starting position for
+the ball.
 """
 
-from ctypes import *
+from ctypes import Structure, c_uint8, c_uint16, c_float
 import textwrap
 
 MAX_NUM_WALLS = 15
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
 
-# TODO PEP8 formatting
-# TODO make executable shell script and able to run anywhere
-ROOT_DIR = "../"
-GENERATED_FILE_NAME = ROOT_DIR + "main/maze_generated.h"
+# Assumes running from project root
+GENERATED_FILE_NAME = "main/maze_generated.h"
 GENERATED_FILE = (
-"""\
-/* THIS IS A GENERATED FILE, DO NOT EDIT MANUALLY. */
+    """\
+    /* THIS IS A GENERATED FILE, DO NOT EDIT MANUALLY. */
 
-#ifndef MAZE_GENERATED_H
-#define MAZE_GENERATED_H
+    #ifndef MAZE_GENERATED_H
+    #define MAZE_GENERATED_H
 
-#define MAX_NUM_WALLS ({})
-#define GEN_DISPLAY_HEIGHT ({})
-#define GEN_DISPLAY_WIDTH ({})
+    #define GEN_MAX_NUM_WALLS ({})
+    #define GEN_DISPLAY_HEIGHT ({})
+    #define GEN_DISPLAY_WIDTH ({})
 
-/* Initial ball position (ball_t) */
-const char g_start_ball[] = {{\n{}\n}};
+    /* Initial ball position (ball_t) */
+    const char g_start_ball[] = {{\n{}\n}};
 
-/* Generated maze (maze_t) */
-const char g_generated_maze[] = {{\n{}\n}};
+    /* Generated maze (maze_t) */
+    const char g_generated_maze[] = {{\n{}\n}};
 
-#endif /* MAZE_GENERATED_H */
-"""
+    #endif /* MAZE_GENERATED_H */
+    """
 )
 
 
@@ -64,8 +65,8 @@ class Maze(Structure):
 
 def get_formatted_bytes(data):
     """
-    Helper function to format a Python C struct as a series of indented bytes for header file
-    generation.
+    Helper function to format a Python C struct as a series of indented bytes
+    for header file generation.
 
     @return string of indented bytes
     """
@@ -79,7 +80,6 @@ def get_formatted_bytes(data):
 
 
 if __name__ == "__main__":
-    # TODO test hardcoding same maze, eventually use DISPLAY_HEIGHT/DISPLAY_WIDTH
     ball = Ball(
             # Previous position
             (20, DISPLAY_HEIGHT // 2),
@@ -100,9 +100,9 @@ if __name__ == "__main__":
 
     raw_ball_data_str = get_formatted_bytes(ball)
     raw_maze_data_str = get_formatted_bytes(maze)
-    file_contents = GENERATED_FILE.format(MAX_NUM_WALLS, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-                                          raw_ball_data_str, raw_maze_data_str)
+    file_contents = GENERATED_FILE.format(MAX_NUM_WALLS, DISPLAY_HEIGHT,
+                                          DISPLAY_WIDTH, raw_ball_data_str,
+                                          raw_maze_data_str)
 
     with open(GENERATED_FILE_NAME, "w+") as f:
         f.write(file_contents)
-
