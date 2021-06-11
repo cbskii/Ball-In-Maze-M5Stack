@@ -1,9 +1,42 @@
-from ctypes import *
+"""
+This script generates a maze for the M5Stack along with a starting position for the ball.
+"""
 
-# TODO for now these are hardcoded, but would be good to share these values with the C header
+from ctypes import *
+import textwrap
+
 MAX_NUM_WALLS = 15
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
+
+ROOT_DIR = "../"
+GENERATED_FILE_NAME = ROOT_DIR + "main/maze_generated.h"
+GENERATED_FILE = (
+"""\
+/* THIS IS A GENERATED FILE, DO NOT EDIT MANUALLY. */
+
+#ifndef MAZE_GENERATED_H
+#define MAZE_GENERATED_H
+
+#define MAX_NUM_WALLS ({})
+#define GEN_DISPLAY_HEIGHT ({})
+#define GEN_DISPLAY_WIDTH ({})
+
+/* Initial ball position (ball_t) */
+const char g_start_ball[] = {{\n{}\n}};
+
+/* Generated maze (maze_t) */
+const char g_generated_maze[] = {{\n{}\n}};
+
+#endif /* MAZE_GENERATED_H */
+"""
+)
+
+
+class VectorFloat(Structure):
+    _fields_ = [("x", c_float),
+                ("y", c_float),
+                ("z", c_float)]
 
 
 class Pos(Structure):
@@ -16,13 +49,45 @@ class Wall(Structure):
                 ("end", Pos)]
 
 
+class Ball(Structure):
+    _fields_ = [("prev_pos", Pos),
+                ("pos", Pos),
+                ("velocity", VectorFloat)]
+
+
 class Maze(Structure):
     _fields_ = [("walls", Wall * MAX_NUM_WALLS),
                 ("num_walls", c_ubyte)]
 
 
+def get_formatted_bytes(data):
+    """
+    Helper function to format a Python C struct as a series of indented bytes for header file
+    generation.
+
+    @return string of indented bytes
+    """
+    raw_str = str([hex(i) for i in bytes(data)])
+    raw_str = raw_str.replace("'", "")
+    raw_str = raw_str.replace("[", "")
+    raw_str = raw_str.replace("]", "")
+    raw_str = textwrap.fill(raw_str)
+    raw_str = textwrap.indent(raw_str, '\t', lambda line: True)
+    return raw_str
+
+
 if __name__ == "__main__":
-    # TODO test hardcoding same maze
+    # TODO test hardcoding same maze, eventually use DISPLAY_HEIGHT/DISPLAY_WIDTH
+    ball = Ball(
+            # Previous position
+            (20, DISPLAY_HEIGHT // 2),
+
+            # Current position (start)
+            (20, DISPLAY_HEIGHT // 2),
+
+            # Velocity
+            ((0.0), (0.0), (0.0)))
+
     maze = Maze((
         # Walls made up of start and end positions
         ((0, 150), (90, 150)),
@@ -31,6 +96,11 @@ if __name__ == "__main__":
         # number of walls
         ), 2)
 
-    data = str([hex(i) for i in bytes(maze)])
-    data = data.replace("'", "")
-    print(data)
+    raw_ball_data_str = get_formatted_bytes(ball)
+    raw_maze_data_str = get_formatted_bytes(maze)
+    file_contents = GENERATED_FILE.format(MAX_NUM_WALLS, DISPLAY_HEIGHT, DISPLAY_WIDTH,
+                                          raw_ball_data_str, raw_maze_data_str)
+
+    with open(GENERATED_FILE_NAME, "w+") as f:
+        f.write(file_contents)
+
