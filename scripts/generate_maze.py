@@ -9,6 +9,8 @@ MAX_NUM_WALLS = 15
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
 
+# TODO PEP8 formatting
+# TODO make executable shell script and able to run anywhere
 ROOT_DIR = "../"
 GENERATED_FILE_NAME = ROOT_DIR + "main/maze_generated.h"
 GENERATED_FILE = (
@@ -40,8 +42,8 @@ class VectorFloat(Structure):
 
 
 class Pos(Structure):
-    _fields_ = [("x", c_ubyte),
-                ("y", c_ubyte)]
+    _fields_ = [("x", c_uint16),
+                ("y", c_uint16)]
 
 
 class Wall(Structure):
@@ -57,7 +59,7 @@ class Ball(Structure):
 
 class Maze(Structure):
     _fields_ = [("walls", Wall * MAX_NUM_WALLS),
-                ("num_walls", c_ubyte)]
+                ("num_walls", c_uint8)]
 
 
 def get_formatted_bytes(data):
