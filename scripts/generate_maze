@@ -16,25 +16,25 @@ DISPLAY_HEIGHT = 240
 # Assumes running from project root
 GENERATED_FILE_NAME = "main/maze_generated.h"
 GENERATED_FILE = (
-    """\
-    /* THIS IS A GENERATED FILE, DO NOT EDIT MANUALLY. */
+"""\
+/* THIS IS A GENERATED FILE, DO NOT EDIT MANUALLY. */
 
-    #ifndef MAZE_GENERATED_H
-    #define MAZE_GENERATED_H
+#ifndef MAZE_GENERATED_H
+#define MAZE_GENERATED_H
 
-    #define GEN_MAX_NUM_WALLS ({})
-    #define GEN_BALL_RADIUS ({})
-    #define GEN_DISPLAY_HEIGHT ({})
-    #define GEN_DISPLAY_WIDTH ({})
+#define GEN_MAX_NUM_WALLS ({})
+#define GEN_BALL_RADIUS ({})
+#define GEN_DISPLAY_HEIGHT ({})
+#define GEN_DISPLAY_WIDTH ({})
 
-    /* Initial ball position (ball_t) */
-    const char g_start_ball[] = {{\n{}\n}};
+/* Initial ball position (ball_t) */
+const char g_start_ball[] = {{\n{}\n}};
 
-    /* Generated maze (maze_t) */
-    const char g_generated_maze[] = {{\n{}\n}};
+/* Generated maze (maze_t) */
+const char g_generated_maze[] = {{\n{}\n}};
 
-    #endif /* MAZE_GENERATED_H */
-    """
+#endif /* MAZE_GENERATED_H */
+"""
 )
 
 
