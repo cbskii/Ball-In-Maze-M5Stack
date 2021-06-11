@@ -4,6 +4,7 @@
     #define MAZE_GENERATED_H
 
     #define GEN_MAX_NUM_WALLS (15)
+    #define GEN_BALL_RADIUS (7)
     #define GEN_DISPLAY_HEIGHT (240)
     #define GEN_DISPLAY_WIDTH (320)
 

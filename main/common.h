@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define MAX_NUM_WALLS (15) // TODO get from generated header
+#define MAX_NUM_WALLS (15)
 #define BALL_RADIUS (7)
 
 typedef struct {
