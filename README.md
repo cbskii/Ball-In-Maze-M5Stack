@@ -16,5 +16,5 @@ The project is setup to build as a standard ESP IDF based project. More informat
 
 At time of writing the flow looks something like this:
 1. Follow ESP IDF set up instructions
-2. Use get_idf command/export needed environment variables
+2. Use `get_idf` command/export needed environment variables
 3. Build with `idf.py build` or build, flash, and monitor with `idf.py flash monitor`. Exit serial monitor with `Ctrl-]`.
