@@ -1,7 +1,7 @@
 # M5Stack Ball In Maze Game
 A little "ball in maze" style game for the M5Stack using the ESP IDF.
 
-The primary goal was to make a game on the M5Stack that uses the built in MPU9250 IMU to move a ball through a maze shown on the display. A secondary goal was to rely only on the ESP IDF for the ESP32 and write some of the drivers from scratch rather than relying on the M5Stack Arduino libraries.
+The primary goal was to make a game on the M5Stack that uses the built in MPU9250 IMU to move a ball through a maze shown on the display. A secondary goal was to only use the ESP IDF for the ESP32 and write some of the drivers from scratch rather than relying on the M5Stack Arduino libraries.
 
 The idea is based off of this style of game:  
 ![image](https://user-images.githubusercontent.com/16770076/121775928-46c7ec80-cb58-11eb-947b-48d80508b907.png)
