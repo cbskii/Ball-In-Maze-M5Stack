@@ -7,7 +7,7 @@ The idea is based off of this style of game:
 ![image](https://user-images.githubusercontent.com/16770076/121775928-46c7ec80-cb58-11eb-947b-48d80508b907.png)
 
 And the result ended up looking like this:  
-![BallInMazeGifM5Stack](https://user-images.githubusercontent.com/16770076/121777142-7b3ea700-cb5e-11eb-8345-2b910e879564.gif)
+![](https://user-images.githubusercontent.com/16770076/121777185-bccf5200-cb5e-11eb-84f6-654288be318b.gif)
 
 There are still several issues to be fixed and improvements to be made, but future support may be limited.
 
